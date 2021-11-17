@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "./"
+    "baseUrl": ".",
+    "noFallthroughCasesInSwitch": true,
+    "jsx": "react-jsx"
   },
-  "include": ["./src"]
+  "include": [
+    "./src"
+  ]
 }
