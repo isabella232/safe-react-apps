@@ -54,7 +54,7 @@ jobs:
         run: lerna bootstrap
 
       - name: Build apps
-        run: lerna run build
+        run: lerna run build --since HEAD
         env:
           REACT_APP_RPC_TOKEN: ${{ secrets.REACT_APP_RPC_TOKEN }}
 
@@ -66,17 +66,18 @@ jobs:
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
       # Script to deploy Pull Requests
-      - run: lerna run deploy:pr
+      - run: lerna run deploy:pr --since $GITHUB_BASE_REF
         if: success() && github.event.number
         env:
           PR_NUMBER: ${{ github.event.number }}
-          REVIEW_BUCKET_NAME: ${{ secrets.AWS_REVIEW_BUCKET_NAME }}
+          TARGET_BRANCH: ${{ github.base_ref }}
 
       - name: 'PRaul: Comment PR with app URLs'
         if: success() && github.event.number
         uses: mshick/add-pr-comment@v1
         with:
           message: |
+            The links contain all apps, but only changed ones are deployed:
             * [Compound app](${{ env.REVIEW_FEATURE_URL }}/compound/)
             * [WalletConnect app](${{ env.REVIEW_FEATURE_URL }}/wallet-connect/)
             * [Tx Builder App](${{ env.REVIEW_FEATURE_URL }}/tx-builder/)
