@@ -1,11 +1,21 @@
 import axios from 'axios';
+import Web3 from 'web3';
+import { BaseTransaction } from '@gnosis.pm/safe-apps-sdk';
 import { TenderlySimulatePayload, TenderlySimulation } from './types';
+import { encodeMultiSendCall, getMultiSendCallOnlyAddress } from './multisend';
+
+type OptionalExceptFor<T, TRequired extends keyof T = keyof T> = Partial<Pick<T, Exclude<keyof T, TRequired>>> &
+  Required<Pick<T, TRequired>>;
 
 // api docs: https://www.notion.so/Simulate-API-Documentation-6f7009fe6d1a48c999ffeb7941efc104
 const SIMULATE_ENDPOINT = 'https://api.tenderly.co/api/v1/account/mikhail-gnosis/project/project/simulate';
 
 const simulateTransaction = async (tx: TenderlySimulatePayload): Promise<TenderlySimulation> => {
-  const response = await axios.post<TenderlySimulation>(SIMULATE_ENDPOINT, tx);
+  const response = await axios.post<TenderlySimulation>(SIMULATE_ENDPOINT, tx, {
+    headers: {
+      'X-Access-Key': 'Xem-IVnTYgo-hnw0cnmp-xzEHzeA-o-b',
+    },
+  });
 
   return response.data;
 };
@@ -23,6 +33,119 @@ const THRESHOLD_ONE_STATE_OVERRIDE = {
   [`0x${'2'.padStart(64, '0')}`]: `0x${'1'.padStart(64, '0')}`,
 };
 
-const getMultiSendSimulationPayload = (transactions): TenderlySimulatePayload => {};
+interface SafeTransaction {
+  to: string;
+  value: string;
+  data: string;
+  safeTxGas: string;
+  baseGas: string;
+  gasPrice: string;
+  gasToken: string;
+  refundReceiver: string;
+  nonce: string;
+  operation: string;
+}
 
-export { getSimulationLink, simulateTransaction };
+interface SignedSafeTransaction extends SafeTransaction {
+  signatures: string;
+}
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const buildSafeTransaction = (template: OptionalExceptFor<SafeTransaction, 'to' | 'nonce'>): SafeTransaction => {
+  return {
+    to: template.to,
+    value: template.value || '0',
+    data: template.data || '0x',
+    operation: template.operation || '0',
+    safeTxGas: template.safeTxGas || '0',
+    baseGas: template.baseGas || '0',
+    gasPrice: template.gasPrice || '0',
+    gasToken: template.gasToken || ZERO_ADDRESS,
+    refundReceiver: template.refundReceiver || ZERO_ADDRESS,
+    nonce: template.nonce,
+  };
+};
+
+const encodeSafeExecuteTransactionCall = (tx: SignedSafeTransaction): string => {
+  const web3 = new Web3();
+
+  const encodedSafeExecuteTransactionCall = web3.eth.abi.encodeFunctionCall(
+    {
+      name: 'execTransaction',
+      type: 'function',
+      inputs: [
+        { name: 'to', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'data', type: 'bytes' },
+        { name: 'operation', type: 'uint8' },
+        { name: 'safeTxGas', type: 'uint256' },
+        { name: 'baseGas', type: 'uint256' },
+        { name: 'gasPrice', type: 'uint256' },
+        { name: 'gasToken', type: 'address' },
+        { name: 'refundReceiver', type: 'address' },
+        { name: 'signatures', type: 'bytes' },
+      ],
+    },
+    [
+      tx.to,
+      tx.value,
+      tx.data,
+      tx.operation,
+      tx.safeTxGas,
+      tx.baseGas,
+      tx.gasPrice,
+      tx.gasToken,
+      tx.refundReceiver,
+      tx.signatures,
+    ],
+  );
+
+  return encodedSafeExecuteTransactionCall;
+};
+
+const getPreValidatedSignature = (address: string): string => {
+  return `0x000000000000000000000000${address.replace(
+    '0x',
+    '',
+  )}000000000000000000000000000000000000000000000000000000000000000001`;
+};
+
+type SimulationTxParams = {
+  safeAddress: string;
+  safeNonce: string;
+  executionOwner: string;
+  transactions: BaseTransaction[];
+  chainId: string;
+  gasLimit: number;
+};
+
+const getMultiSendSimulationPayload = (tx: SimulationTxParams): TenderlySimulatePayload => {
+  const safeTransactionData = encodeMultiSendCall(tx.transactions);
+  const multiSendAddress = getMultiSendCallOnlyAddress(tx.chainId);
+  const safeTransaction = buildSafeTransaction({
+    to: multiSendAddress,
+    value: '0',
+    data: safeTransactionData,
+    nonce: tx.safeNonce,
+  });
+  const signedSafeTransaction: SignedSafeTransaction = {
+    ...safeTransaction,
+    signatures: getPreValidatedSignature(tx.executionOwner),
+  };
+  const executionTransactionData = encodeSafeExecuteTransactionCall(signedSafeTransaction);
+
+  return {
+    network_id: tx.chainId,
+    from: tx.executionOwner,
+    to: tx.safeAddress,
+    input: executionTransactionData,
+    gas: tx.gasLimit,
+    state_objects: {
+      [tx.safeAddress]: THRESHOLD_ONE_STATE_OVERRIDE,
+    },
+    save: true,
+  };
+};
+
+export { getSimulationLink, simulateTransaction, getMultiSendSimulationPayload };

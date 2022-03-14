@@ -14,6 +14,10 @@ const goBackLabel: Record<string, string> = {
   [TRANSACTION_LIBRARY_PATH]: 'Back to Your Transaction Library',
 };
 
+type LocationType = {
+  state: { from: string } | null;
+};
+
 const Header = () => {
   const { pathname } = useLocation();
 
@@ -29,8 +33,9 @@ const Header = () => {
   const showTitle = isTransactionCreationPath || isSaveBatchPath;
   const showLinkToLibrary = isTransactionCreationPath || isSaveBatchPath;
 
-  const { state } = useLocation();
-  const { from: previousUrl } = (state as { from: string }) || { from: CREATE_BATCH_PATH };
+  const { state } = useLocation() as LocationType;
+
+  const previousUrl = state?.from || CREATE_BATCH_PATH;
 
   return (
     <>

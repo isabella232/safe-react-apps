@@ -8,7 +8,8 @@ import useModal from '../hooks/useModal/useModal';
 import { HOME_PATH } from '../routes/routes';
 import { useEffect } from 'react';
 import SuccessBatchCreationModal from '../components/modals/SuccessBatchCreationModal';
-import { useTransactionLibrary, useTransactions } from '../store';
+import { useNetwork, useTransactionLibrary, useTransactions } from '../store';
+import { getMultiSendSimulationPayload, simulateTransaction } from '../lib/simulation/simulation';
 
 const ReviewAndConfirm = () => {
   const {
@@ -25,6 +26,7 @@ const ReviewAndConfirm = () => {
     reorderTransactions,
   } = useTransactions();
   const { downloadBatch, saveBatch } = useTransactionLibrary();
+  const { safe, web3 } = useNetwork();
 
   const { open: showDeleteBatchModal, openModal: openDeleteBatchModal, closeModal: closeDeleteBatchModal } = useModal();
 
@@ -37,6 +39,23 @@ const ReviewAndConfirm = () => {
     } catch (e) {
       console.error('Error sending transactions:', e);
     }
+  };
+
+  const onSimulateClick = async () => {
+    const safeNonce = (await web3?.eth.getStorageAt(safe.safeAddress, `0x${'3'.padStart(64, '0')}`)) || '0';
+
+    const simulationPayload = getMultiSendSimulationPayload({
+      chainId: safe.chainId.toString(),
+      safeAddress: safe.safeAddress,
+      executionOwner: safe.owners[0],
+      safeNonce,
+      transactions: transactions.map((transaction) => transaction.raw),
+      gasLimit: 1_000_000,
+    });
+
+    const simulationResponse = await simulateTransaction(simulationPayload);
+
+    console.log({ simulationResponse });
   };
 
   useEffect(() => {
@@ -88,6 +107,11 @@ const ReviewAndConfirm = () => {
             onClick={openDeleteBatchModal}
           >
             Cancel
+          </StyledCancelButton>
+
+          {/* Simulate batch button */}
+          <StyledCancelButton size="md" type="button" variant="outlined" color="secondary" onClick={onSimulateClick}>
+            Simulate
           </StyledCancelButton>
         </ButtonsWrapper>
       </Wrapper>
