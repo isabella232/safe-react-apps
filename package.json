@@ -14,7 +14,8 @@
     "start:walletconnect": "yarn workspace wallet-connect start",
     "start:ramp": "yarn workspace ramp-network start",
     "start:drain-safe": "yarn workspace drain-safe start",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "cy:open": "PASSWORD=XXX SECRET_WORDS='XXX' NETWORK_NAME=rinkeby synpress run"
   },
   "version": "2.5.1",
   "workspaces": [
@@ -22,7 +23,7 @@
   ],
   "dependencies": {
     "@gnosis.pm/safe-apps-react-sdk": "4.2.3",
-    "@gnosis.pm/safe-apps-sdk": "7.2.0",
+    "@gnosis.pm/safe-apps-sdk": "7.2.0",    
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "^4.0.3",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@jscutlery/semver": "^2.18.0",
+    "@synthetixio/synpress": "^1.1.1",
     "@nrwl/cli": "13.8.0",
     "@nrwl/tao": "13.8.0",
     "@nrwl/workspace": "13.8.0",
@@ -46,6 +48,7 @@
     "babel-eslint": "10.1.0",
     "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.1.0",
+    "dotenv": "^16.0.0",
     "dotenv-cli": "^4.0.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.1.0",
