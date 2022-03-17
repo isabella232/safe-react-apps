@@ -128,6 +128,7 @@ const getMultiSendSimulationPayload = (tx: SimulationTxParams): TenderlySimulate
     value: '0',
     data: safeTransactionData,
     nonce: tx.safeNonce,
+    operation: '1',
   });
   const signedSafeTransaction: SignedSafeTransaction = {
     ...safeTransaction,
