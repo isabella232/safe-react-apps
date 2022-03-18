@@ -10,7 +10,7 @@ type OptionalExceptFor<T, TRequired extends keyof T = keyof T> = Partial<Pick<T,
 // api docs: https://www.notion.so/Simulate-API-Documentation-6f7009fe6d1a48c999ffeb7941efc104
 const SIMULATE_ENDPOINT = 'https://api.tenderly.co/api/v1/account/mikhail-gnosis/project/project/simulate';
 
-const simulateTransaction = async (tx: TenderlySimulatePayload): Promise<TenderlySimulation> => {
+const getSimulation = async (tx: TenderlySimulatePayload): Promise<TenderlySimulation> => {
   const response = await axios.post<TenderlySimulation>(SIMULATE_ENDPOINT, tx, {
     headers: {
       'X-Access-Key': 'Xem-IVnTYgo-hnw0cnmp-xzEHzeA-o-b',
@@ -145,8 +145,8 @@ const getMultiSendSimulationPayload = (tx: SimulationTxParams): TenderlySimulate
     state_objects: {
       [tx.safeAddress]: THRESHOLD_ONE_STATE_OVERRIDE,
     },
-    save: true,
+    save: false,
   };
 };
 
-export { getSimulationLink, simulateTransaction, getMultiSendSimulationPayload };
+export { getSimulationLink, getSimulation, getMultiSendSimulationPayload };

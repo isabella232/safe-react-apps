@@ -215,6 +215,11 @@ interface Simulation {
   created_at: Date;
 }
 
+interface ErrorInfo {
+  error_message: string;
+  address: string;
+}
+
 interface Transaction {
   hash: string;
   block_hash: string;
@@ -231,6 +236,8 @@ interface Transaction {
   nonce: number;
   to: string;
   index: number;
+  error_message?: string;
+  error_info?: ErrorInfo;
   value: string;
   access_list: null;
   status: boolean;
